@@ -23,6 +23,7 @@ model Staff {
   id          Int               @id @default(autoincrement())
   name        String
   maxHour     Int               @map("max_hour")
+  isDeleted   Boolean           @default(false) @map("is_deleted")
   assignments ShiftAssignment[]
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
