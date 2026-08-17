@@ -25,19 +25,19 @@ model Staff {
   maxHour     Int               @map("max_hour")
   assignments ShiftAssignment[]
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("staff")
 }
 
 model Schedule {
   id           Int      @id @default(autoincrement())
-  startDate    DateTime @map("start_date")
+  startDate    DateTime @map("start_date") @db.Timestamptz
   uploadedTxns Json?    @map("uploaded_txns")
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   shifts Shift[]
 

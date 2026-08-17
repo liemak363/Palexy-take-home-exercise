@@ -21,4 +21,10 @@ export class ScheduleRepository {
 
     return { items, total, page, limit };
   }
+
+  async create(startDate: Date) {
+    return this.prisma.schedule.create({
+      data: { startDate },
+    });
+  }
 }

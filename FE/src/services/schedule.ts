@@ -32,9 +32,9 @@ export interface ScheduleListResult {
 
 export const scheduleApi = {
   create: async (
-    params: ScheduleCreateReq
-  ): Promise<AxiosResponse<ApiResponse<Schedule>>> => {
-    return axiosInstance.post<ApiResponse<Schedule>>("/schedules", { params });
+    body: ScheduleCreateReq
+  ): Promise<AxiosResponse<ApiResponse<ScheduleOverview>>> => {
+    return axiosInstance.post<ApiResponse<ScheduleOverview>>("/schedules", body);
   },
 
   getAll: async (
