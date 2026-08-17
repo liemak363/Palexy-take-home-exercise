@@ -38,7 +38,8 @@ The template is structured around the Next.js App Router (`FE/src/app`):
 
 ## Best Practices
 
-- **Client vs Server Components**: Next.js App Router uses Server Components by default. If your component needs interactivity (hooks like `useState`, `useSidebar`, `useEffect`, or event listeners), add the `"use client";` directive at the very top of the file.
+- **Client Components**: Components and pages in project are all client components. They use hooks like `useState`, `useSidebar`, `useEffect`, or event listeners, so always add the `"use client";` directive at the very top of the file.
+- **Call API**: use `useApi` hook defined in `src/hooks/useApi.ts` to call API. Whenever calling API, the calling must be wrapped by try-catch block and use `toast` and `error` state in `useApi` to display error messages.
 - **Form Controls**: Check `components/form/` for existing form elements (inputs, selects, etc.) before building new ones.
 - **Charts**: Use the existing `react-apexcharts` wrapper and follow examples in `components/charts/` when building new data visualizations.
 
