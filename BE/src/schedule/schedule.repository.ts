@@ -15,17 +15,6 @@ export class ScheduleRepository {
         skip,
         take: limit,
         orderBy: { startDate: 'desc' },
-        include: {
-          shifts: {
-            include: {
-              assignments: {
-                include: {
-                  staff: true,
-                },
-              },
-            },
-          },
-        },
       }),
       this.prisma.schedule.count(),
     ]);

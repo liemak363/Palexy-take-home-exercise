@@ -142,12 +142,6 @@ export default function SchedulePage() {
                         Start Date
                       </th>
                       <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300">
-                        Shifts
-                      </th>
-                      <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300">
-                        Uploaded Txns
-                      </th>
-                      <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-300">
                         Created At
                       </th>
                     </tr>
@@ -171,37 +165,6 @@ export default function SchedulePage() {
                               month: "short",
                               day: "numeric",
                             }
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-1">
-                            {schedule.shifts.length === 0 ? (
-                              <span className="text-gray-400 dark:text-gray-500">
-                                —
-                              </span>
-                            ) : (
-                              schedule.shifts.map((shift) => (
-                                <span
-                                  key={shift.id}
-                                  className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                                >
-                                  {shift.start} – {shift.end}
-                                </span>
-                              ))
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {schedule.uploadedTxns ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                              Uploaded
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-                              <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
-                              None
-                            </span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-gray-500 dark:text-gray-400">

@@ -12,12 +12,19 @@ export interface Schedule {
   shifts: Shift[];
 }
 
+export interface ScheduleOverview {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  startDate: string;
+}
+
 export interface ScheduleCreateReq {
   startDate: string;
 }
 
 export interface ScheduleListResult {
-  items: Schedule[];
+  items: ScheduleOverview[];
   total: number;
   page: number;
   limit: number;
