@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Config {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("config")
+}
+
+model Staff {
+  id          Int               @id @default(autoincrement())
+  name        String
+  maxHour     Int               @map("max_hour")
+  assignments ShiftAssignment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("staff")
+}
+
+model Schedule {
+  id           Int      @id @default(autoincrement())
+  startDate    DateTime @map("start_date")
+  uploadedTxns Json?    @map("uploaded_txns")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shifts Shift[]
+
+  @@map("schedule")
+}
+
+model Shift {
+  id         Int    @id @default(autoincrement())
+  scheduleId Int    @map("schedule_id")
+  start      String
+  end        String
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  assignments ShiftAssignment[]
+
+  @@index([scheduleId])
+  @@map("shift")
+}
+
+model ShiftAssignment {
+  id      Int @id @default(autoincrement())
+  shiftId Int @map("shift_id")
+  staffId Int @map("staff_id")
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, staffId])
+  @@index([staffId])
+  @@map("shift_assignment")
+}
