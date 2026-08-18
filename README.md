@@ -58,7 +58,7 @@ npm run build
 npm run start
 ```
 
-The application is now ready to use.
+The application is now ready to use. The application runs on localhost:4000
 
 ---
 
