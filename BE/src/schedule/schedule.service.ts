@@ -6,13 +6,20 @@ import {
 import { ScheduleRepository } from './schedule.repository';
 import { ScheduleQueryDto } from './dto/schedule-query.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { DayOfWeek } from './types/common.type';
 import {
-  DayOfWeek,
   HourlyTransaction,
   UploadedTransactions,
 } from './types/uploaded-transactions.type';
 import { UpdateShiftDefinitionDto } from './dto/update-shift-definition.dto';
 import { ShiftDefinition } from './types/shift-definition.type';
+import { ConfirmScheduleDto } from './dto/confirm-schedule.dto';
+import {
+  runAutoSchedule,
+  AutoScheduleDraft,
+  ShiftRow,
+  StaffRow,
+} from './auto-schedule';
 
 // ---------------------------------------------------------------------------
 // CSV helpers (pure functions — no external dependency)
@@ -313,5 +320,78 @@ export class ScheduleService {
     const definition = validateAndSortShiftDefinition(dto);
     await this.scheduleRepository.updateShiftDefinition(id, definition);
     return definition;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auto-schedule
+  // ---------------------------------------------------------------------------
+
+  async autoSchedule(id: number): Promise<AutoScheduleDraft> {
+    const schedule =
+      await this.scheduleRepository.findScheduleForAutoSchedule(id);
+    if (!schedule) {
+      throw new NotFoundException(`Schedule #${id} not found.`);
+    }
+
+    if (!schedule.uploadedTxns) {
+      throw new BadRequestException(
+        `Schedule #${id} has no uploaded transaction data. Please upload a CSV first.`,
+      );
+    }
+
+    const [staff, n] = await Promise.all([
+      this.scheduleRepository.findAllActiveStaff(),
+      this.scheduleRepository.findTransactionsPerStaffHour(),
+    ]);
+
+    const txns = schedule.uploadedTxns as unknown as UploadedTransactions;
+    const shiftDef: ShiftDefinition =
+      (schedule.shiftDefinition as ShiftDefinition) ?? [
+        { start: '07:00', end: '15:00' },
+        { start: '15:00', end: '23:00' },
+      ];
+
+    // Generate virtual shifts for each day of week (MONDAY..SUNDAY) x shiftDefinition slots
+    let virtualId = 1;
+    const shifts: ShiftRow[] = ALL_DAYS.flatMap((dayOfWeek) =>
+      shiftDef.map((slot) => ({
+        id: virtualId++,
+        scheduleId: id,
+        dayOfWeek,
+        start: slot.start,
+        end: slot.end,
+      })),
+    );
+
+    const staffRows: StaffRow[] = staff.map((s) => ({
+      id: s.id,
+      name: s.name,
+      maxHour: s.maxHour,
+    }));
+
+    return runAutoSchedule(txns, shifts, staffRows, n);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Confirm schedule
+  // ---------------------------------------------------------------------------
+
+  async confirmSchedule(id: number, dto: ConfirmScheduleDto): Promise<void> {
+    const schedule = await this.findById(id);
+    if (!schedule) {
+      throw new NotFoundException(`Schedule #${id} not found.`);
+    }
+
+    const shiftDef: ShiftDefinition =
+      (schedule.shiftDefinition as ShiftDefinition) ?? [
+        { start: '07:00', end: '15:00' },
+        { start: '15:00', end: '23:00' },
+      ];
+
+    await this.scheduleRepository.replaceScheduleShiftsAndAssignments(
+      id,
+      shiftDef,
+      dto.assignments,
+    );
   }
 }

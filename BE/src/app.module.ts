@@ -7,7 +7,12 @@ import { ScheduleModule } from './schedule/schedule.module';
 import { StaffModule } from './staff/staff.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, ScheduleModule, StaffModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    ScheduleModule,
+    StaffModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

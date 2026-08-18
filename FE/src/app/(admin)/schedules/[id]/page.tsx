@@ -5,9 +5,9 @@ import { toast } from "react-toastify";
 import { useApi } from "@/hooks/useApi";
 import {
   scheduleApi,
-  DayOfWeek,
   UploadedTransactions,
 } from "@/services/schedule";
+import { DayOfWeek } from "@/services/common"
 import { formatDate, formatDateTime } from "@/utils/formatDate";
 import { useScheduleContext } from "./ScheduleContext";
 

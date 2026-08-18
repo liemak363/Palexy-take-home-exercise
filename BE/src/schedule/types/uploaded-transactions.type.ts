@@ -1,11 +1,4 @@
-export type DayOfWeek =
-  | 'MONDAY'
-  | 'TUESDAY'
-  | 'WEDNESDAY'
-  | 'THURSDAY'
-  | 'FRIDAY'
-  | 'SATURDAY'
-  | 'SUNDAY';
+import { DayOfWeek } from './common.type';
 
 export type HourlyTransaction = {
   hour: string; // HH:mm, e.g. "07:00"

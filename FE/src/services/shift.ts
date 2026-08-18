@@ -1,6 +1,19 @@
+import { DayOfWeek } from "./common";
+
+export interface ShiftAssignment {
+  id: number;
+  staffId: number;
+  staff: {
+    id: number;
+    name: string;
+  };
+}
+
 export interface Shift {
-  id: number,
-  start: string,
-  end: string,
-  scheduleId: number,
+  id: number;
+  scheduleId: number;
+  dayOfWeek: DayOfWeek;
+  start: string;
+  end: string;
+  assignments: ShiftAssignment[];
 }

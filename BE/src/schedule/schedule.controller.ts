@@ -10,12 +10,15 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ScheduleService } from './schedule.service';
 import { ScheduleQueryDto } from './dto/schedule-query.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateShiftDefinitionDto } from './dto/update-shift-definition.dto';
+import { ConfirmScheduleDto } from './dto/confirm-schedule.dto';
 
 @Controller('schedules')
 export class ScheduleController {
@@ -64,5 +67,25 @@ export class ScheduleController {
     @Body() dto: UpdateShiftDefinitionDto,
   ) {
     return this.scheduleService.updateShiftDefinition(id, dto);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auto-schedule
+  // ---------------------------------------------------------------------------
+
+  @Post(':id/auto-schedule')
+  @HttpCode(HttpStatus.OK)
+  async autoSchedule(@Param('id', ParseIntPipe) id: number) {
+    return this.scheduleService.autoSchedule(id);
+  }
+
+  @Post(':id/confirm-schedule')
+  @HttpCode(HttpStatus.OK)
+  async confirmSchedule(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ConfirmScheduleDto,
+  ) {
+    await this.scheduleService.confirmSchedule(id, dto);
+    return { message: 'Schedule confirmed and saved successfully.' };
   }
 }

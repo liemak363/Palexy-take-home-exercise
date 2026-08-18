@@ -47,10 +47,11 @@ model Schedule {
 }
 
 model Shift {
-  id         Int    @id @default(autoincrement())
-  scheduleId Int    @map("schedule_id")
+  id         Int       @id @default(autoincrement())
+  scheduleId Int       @map("schedule_id")
   start      String
   end        String
+  dayOfWeek  DayOfWeek @map("day_of_week")
 
   schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
@@ -72,4 +73,14 @@ model ShiftAssignment {
   @@unique([shiftId, staffId])
   @@index([staffId])
   @@map("shift_assignment")
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }

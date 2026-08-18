@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../provider/prisma/prisma.service';
 import { ScheduleQueryDto } from './dto/schedule-query.dto';
+import { DayOfWeek, DayOfWeekEnum } from './types/common.type';
 import { UploadedTransactions } from './types/uploaded-transactions.type';
 import { ShiftDefinition } from './types/shift-definition.type';
 
@@ -41,6 +42,7 @@ export class ScheduleRepository {
     });
   }
 
+  /** Returns shifts with their current assignments (including staff details). */
   async findShiftsById(id: number) {
     return this.prisma.schedule.findUnique({
       where: { id },
@@ -48,7 +50,14 @@ export class ScheduleRepository {
         id: true,
         startDate: true,
         shiftDefinition: true,
-        shifts: true,
+        shifts: {
+          include: {
+            assignments: {
+              include: { staff: true },
+            },
+          },
+          orderBy: [{ dayOfWeek: 'asc' }, { start: 'asc' }],
+        },
       },
     });
   }
@@ -57,6 +66,131 @@ export class ScheduleRepository {
     return this.prisma.schedule.update({
       where: { id },
       data: { shiftDefinition: definition as object },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auto-schedule helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the schedule with its uploadedTxns and shiftDefinition.
+   * Used by the auto-schedule algorithm.
+   */
+  async findScheduleForAutoSchedule(id: number) {
+    return this.prisma.schedule.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        uploadedTxns: true,
+        shiftDefinition: true,
+      },
+    });
+  }
+
+  /** Returns all non-deleted staff (global pool for auto-scheduling). */
+  async findAllActiveStaff() {
+    return this.prisma.staff.findMany({
+      where: { isDeleted: false },
+      orderBy: { id: 'asc' },
+    });
+  }
+
+  /** Reads the N (transactions-per-staff-hour) constant from the Config table. */
+  async findTransactionsPerStaffHour(): Promise<number> {
+    const config = await this.prisma.config.findUnique({
+      where: { key: 'TRANSACTIONS_PER_STAFF_HOUR' },
+    });
+    if (!config) return 15;
+    const parsed = Number(config.value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 15;
+  }
+
+  /**
+   * Persists confirmed draft assignments:
+   * 1. Deletes all existing Shift rows for scheduleId (cascades to ShiftAssignment)
+   * 2. Creates Shift rows for each day of week (MONDAY..SUNDAY) x defined slots
+   * 3. Creates ShiftAssignment rows for the confirmed assignments
+   * Wrapped in a single transaction.
+   */
+  async replaceScheduleShiftsAndAssignments(
+    scheduleId: number,
+    shiftDefinition: ShiftDefinition,
+    assignments: {
+      dayOfWeek: DayOfWeek;
+      start: string;
+      end: string;
+      staffId: number;
+    }[],
+  ) {
+    const ALL_DAYS: DayOfWeek[] = Object.values(DayOfWeekEnum);
+
+    const slots =
+      shiftDefinition && shiftDefinition.length > 0
+        ? shiftDefinition
+        : [
+            { start: '07:00', end: '15:00' },
+            { start: '15:00', end: '23:00' },
+          ];
+
+    return this.prisma.$transaction(async (tx) => {
+      // Delete existing Shift rows (cascades to ShiftAssignment)
+      await tx.shift.deleteMany({ where: { scheduleId } });
+
+      // Recreate Shift rows
+      const createdShifts: {
+        id: number;
+        dayOfWeek: DayOfWeek;
+        start: string;
+        end: string;
+      }[] = [];
+
+      for (const dayOfWeek of ALL_DAYS) {
+        for (const slot of slots) {
+          const created = await tx.shift.create({
+            data: {
+              scheduleId,
+              dayOfWeek,
+              start: slot.start,
+              end: slot.end,
+            },
+          });
+          createdShifts.push({
+            id: created.id,
+            dayOfWeek: created.dayOfWeek as DayOfWeek,
+            start: created.start,
+            end: created.end,
+          });
+        }
+      }
+
+      // Create ShiftAssignment rows for confirmed assignments
+      if (assignments.length > 0) {
+        const assignmentData: { shiftId: number; staffId: number }[] = [];
+
+        for (const a of assignments) {
+          const matchingShift = createdShifts.find(
+            (s) =>
+              s.dayOfWeek === a.dayOfWeek &&
+              s.start === a.start &&
+              s.end === a.end,
+          );
+
+          if (matchingShift) {
+            assignmentData.push({
+              shiftId: matchingShift.id,
+              staffId: a.staffId,
+            });
+          }
+        }
+
+        if (assignmentData.length > 0) {
+          await tx.shiftAssignment.createMany({
+            data: assignmentData,
+            skipDuplicates: true,
+          });
+        }
+      }
     });
   }
 }

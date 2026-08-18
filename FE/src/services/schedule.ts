@@ -1,20 +1,11 @@
 import axiosInstance from "@/libs/axios";
 import { AxiosResponse } from "axios";
-import { ApiResponse } from "./common";
+import { ApiResponse, DayOfWeek } from "./common";
 import { Shift } from "./shift";
 
 // ---------------------------------------------------------------------------
 // Canonical transaction types (mirrors the backend shape)
 // ---------------------------------------------------------------------------
-
-export type DayOfWeek =
-  | "MONDAY"
-  | "TUESDAY"
-  | "WEDNESDAY"
-  | "THURSDAY"
-  | "FRIDAY"
-  | "SATURDAY"
-  | "SUNDAY";
 
 export interface HourlyTransaction {
   hour: string; // HH:mm, e.g. "07:00"
@@ -78,6 +69,49 @@ export interface ScheduleListResult {
 }
 
 // ---------------------------------------------------------------------------
+// Auto-schedule draft types (mirrors the backend shape)
+// ---------------------------------------------------------------------------
+
+export interface DraftShiftAssignment {
+  shiftId: number;
+  staffId: number;
+  staffName: string;
+}
+
+export interface UnderstaffedHour {
+  hour: string;
+  required: number;
+  scheduled: number;
+}
+
+export interface ShiftDraft {
+  shiftId: number;
+  dayOfWeek: DayOfWeek;
+  start: string;
+  end: string;
+  peakRequiredStaff: number;
+  allocatedSlots: number;
+  assignments: DraftShiftAssignment[];
+}
+
+export interface AutoScheduleDraft {
+  shifts: ShiftDraft[];
+  totalStaffHoursUsed: number;
+  totalStaffHoursAvailable: number;
+}
+
+export interface ConfirmAssignment {
+  dayOfWeek: DayOfWeek;
+  start: string;
+  end: string;
+  staffId: number;
+}
+
+export interface ConfirmScheduleReq {
+  assignments: ConfirmAssignment[];
+}
+
+// ---------------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------------
 
@@ -129,6 +163,24 @@ export const scheduleApi = {
     return axiosInstance.put<ApiResponse<ShiftDefinition>>(
       `/schedules/${id}/shift-definition`,
       { shifts }
+    );
+  },
+
+  autoSchedule: async (
+    id: number
+  ): Promise<AxiosResponse<ApiResponse<AutoScheduleDraft>>> => {
+    return axiosInstance.post<ApiResponse<AutoScheduleDraft>>(
+      `/schedules/${id}/auto-schedule`
+    );
+  },
+
+  confirmSchedule: async (
+    id: number,
+    body: ConfirmScheduleReq
+  ): Promise<AxiosResponse<ApiResponse<{ message: string }>>> => {
+    return axiosInstance.post<ApiResponse<{ message: string }>>(
+      `/schedules/${id}/confirm-schedule`,
+      body
     );
   },
 };
