@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../provider/prisma/prisma.service';
 import { StaffQueryDto } from './dto/staff-query.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
@@ -37,10 +33,6 @@ export class StaffRepository {
   }
 
   async softDelete(id: number) {
-    const staff = await this.findById(id);
-    if (staff.isDeleted) {
-      throw new BadRequestException(`Staff with id ${id} is already deleted`);
-    }
     return this.prisma.staff.update({
       where: { id },
       data: { isDeleted: true },
@@ -48,10 +40,6 @@ export class StaffRepository {
   }
 
   async update(id: number, dto: UpdateStaffDto) {
-    const staff = await this.findById(id);
-    if (staff.isDeleted) {
-      throw new BadRequestException(`Cannot update a deleted staff (id ${id})`);
-    }
     return this.prisma.staff.update({
       where: { id },
       data: dto,
