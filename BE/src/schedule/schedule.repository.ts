@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../provider/prisma/prisma.service';
 import { ScheduleQueryDto } from './dto/schedule-query.dto';
+import { UploadedTransactions } from './types/uploaded-transactions.type';
 
 @Injectable()
 export class ScheduleRepository {
@@ -22,9 +23,20 @@ export class ScheduleRepository {
     return { items, total, page, limit };
   }
 
+  async findById(id: number) {
+    return this.prisma.schedule.findUnique({ where: { id } });
+  }
+
   async create(startDate: Date) {
     return this.prisma.schedule.create({
       data: { startDate },
+    });
+  }
+
+  async updateUploadedTxns(id: number, txns: UploadedTransactions) {
+    return this.prisma.schedule.update({
+      where: { id },
+      data: { uploadedTxns: txns as object },
     });
   }
 }

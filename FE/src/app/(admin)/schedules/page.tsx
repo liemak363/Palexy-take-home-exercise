@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useApi, useApiEffect } from "@/hooks/useApi";
 import { scheduleApi, ScheduleListResult, ScheduleOverview } from "@/services/schedule";
@@ -186,6 +187,7 @@ function CreateScheduleModal({ onClose, onCreated }: Omit<CreateScheduleModalPro
 // ---------------------------------------------------------------------------
 
 export default function SchedulePage() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -342,7 +344,8 @@ export default function SchedulePage() {
                       return (
                         <tr
                           key={schedule.id}
-                          className="group transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40"
+                          onClick={() => router.push(`/schedules/${schedule.id}`)}
+                          className="group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40"
                         >
                           <td className="px-6 py-4">
                             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-50 text-xs font-semibold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
