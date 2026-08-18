@@ -8,16 +8,7 @@ import {
   ScheduleShifts,
   ShiftSlot,
   ShiftDefinition,
-  HourlyTransaction,
 } from "@/services/schedule";
-import { DayOfWeek } from "@/services/common"
-import { Shift } from "@/services/shift";
-import {
-  AggregatedSummary,
-  HourlyNoticesPanel,
-  calculateHourlyNotices,
-  SummaryShift,
-} from "./SharedSummary";
 
 const DAY_START = "07";
 const DAY_END = "23";
@@ -153,25 +144,16 @@ function validateSlots(slots: ShiftSlot[]): string | null {
   return null;
 }
 
-function savedShiftsToSummaryInputs(shifts: Shift[]): SummaryShift[] {
-  return shifts.map((s) => ({
-    dayOfWeek: s.dayOfWeek,
-    start: s.start,
-    end: s.end,
-    staffCount: s.assignments.length,
-  }));
-}
-
 interface ShiftDefinitionTabProps {
   scheduleId: number;
   schedule: ScheduleShifts;
-  txnDays: Record<DayOfWeek, HourlyTransaction[]>;
+  onDefinitionChanged: () => void;
 }
 
 export function ShiftDefinitionTab({
   scheduleId,
   schedule,
-  txnDays,
+  onDefinitionChanged,
 }: ShiftDefinitionTabProps) {
   const [slots, setSlots] = useState<ShiftSlot[]>([]);
   const [clientError, setClientError] = useState<string | null>(null);
@@ -248,6 +230,7 @@ export function ShiftDefinitionTab({
     try {
       await save(scheduleId, slots);
       toast.success("Shift definition saved.");
+      onDefinitionChanged();
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message ?? "Failed to save shifts.";
       setClientError(message);
@@ -256,9 +239,6 @@ export function ShiftDefinitionTab({
 
   const clientValidation = validateSlots(slots);
   const isValid = clientValidation === null;
-  const savedShiftSummaryInputs = savedShiftsToSummaryInputs(schedule.shifts ?? []);
-  const savedNotices = calculateHourlyNotices(txnDays, savedShiftSummaryInputs);
-
   return (
     <>
       <div className="px-6 py-5">
@@ -344,19 +324,6 @@ export function ShiftDefinitionTab({
           {saving ? "Saving…" : "Save Shifts"}
         </button>
       </div>
-
-      {(schedule.shifts ?? []).length > 0 && (
-        <div className="space-y-4 px-6 py-5">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-white/90">
-            Aggregated Summary & Capacity Notices — Saved Assignments
-          </h3>
-          <HourlyNoticesPanel notices={savedNotices} />
-          <AggregatedSummary
-            txnDays={txnDays}
-            shiftStaffCounts={savedShiftSummaryInputs}
-          />
-        </div>
-      )}
     </>
   );
 }

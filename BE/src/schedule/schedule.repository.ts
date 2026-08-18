@@ -106,6 +106,11 @@ export class ScheduleRepository {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 15;
   }
 
+  /** Deletes all Shift rows for a schedule (cascades to ShiftAssignment). */
+  async deleteAllShifts(scheduleId: number): Promise<void> {
+    await this.prisma.shift.deleteMany({ where: { scheduleId } });
+  }
+
   /**
    * Persists confirmed draft assignments:
    * 1. Deletes all existing Shift rows for scheduleId (cascades to ShiftAssignment)

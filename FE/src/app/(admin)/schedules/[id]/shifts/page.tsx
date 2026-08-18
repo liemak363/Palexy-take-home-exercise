@@ -9,13 +9,20 @@ import {
   ScheduleShifts,
   HourlyTransaction,
 } from "@/services/schedule";
-import { DayOfWeek } from "@/services/common"
+import { DayOfWeek } from "@/services/common";
 import { staffApi, Staff } from "@/services/staff";
 import { useScheduleContext } from "../ScheduleContext";
 import { ShiftDefinitionTab } from "./components/ShiftDefinitionTab";
 import { AutoScheduleTab } from "./components/AutoScheduleTab";
+import { SavedShiftsTab } from "./components/SavedShiftsTab";
 
-type Tab = "definition" | "auto-schedule";
+type Tab = "saved" | "definition" | "auto-schedule";
+
+const TAB_LABELS: Record<Tab, string> = {
+  saved: "Saved Shifts",
+  definition: "Shift Definition",
+  "auto-schedule": "Auto-Schedule",
+};
 
 export default function ShiftsPage() {
   const params = useParams<{ id: string }>();
@@ -25,12 +32,12 @@ export default function ShiftsPage() {
   const txnDays: Record<DayOfWeek, HourlyTransaction[]> =
     (scheduleOverview?.uploadedTxns?.days as Record<DayOfWeek, HourlyTransaction[]>) ??
     (Object.fromEntries(
-      (["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"] as DayOfWeek[]).map(
+      (["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"] as DayOfWeek[]).map(
         (d) => [d, [] as HourlyTransaction[]]
       )
     ) as unknown as Record<DayOfWeek, HourlyTransaction[]>);
 
-  const [activeTab, setActiveTab] = useState<Tab>("definition");
+  const [activeTab, setActiveTab] = useState<Tab>("saved");
 
   const fetchScheduleShifts = useCallback(
     (id: number) => scheduleApi.getScheduleShifts(id),
@@ -83,33 +90,49 @@ export default function ShiftsPage() {
   return (
     <div className="divide-y divide-gray-100 dark:divide-gray-800">
       {/* Tab switcher */}
-      <div className="flex gap-1 px-6 pt-5 pb-0">
-        {(["definition", "auto-schedule"] as Tab[]).map((tab) => (
+      <div className="flex gap-1 overflow-x-auto px-6 pt-5 pb-0">
+        {(["saved", "definition", "auto-schedule"] as Tab[]).map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`rounded-t-lg px-4 py-2 text-sm font-medium transition ${
+            className={`whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium transition ${
               activeTab === tab
                 ? "border border-b-0 border-gray-200 bg-white text-brand-600 dark:border-gray-700 dark:bg-gray-900 dark:text-brand-400"
                 : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
             }`}
           >
-            {tab === "definition" ? "Shift Definition" : "Auto-Schedule"}
+            {TAB_LABELS[tab]}
           </button>
         ))}
       </div>
 
-      {/* Tab 1: Shift Definition */}
+      {/* Tab: Saved Shifts */}
+      {activeTab === "saved" && (
+        <SavedShiftsTab
+          scheduleId={scheduleId}
+          schedule={schedule}
+          allStaff={allStaff}
+          txnDays={txnDays}
+          onSaved={async () => {
+            await refetchShifts();
+          }}
+        />
+      )}
+
+      {/* Tab: Shift Definition */}
       {activeTab === "definition" && (
         <ShiftDefinitionTab
           scheduleId={scheduleId}
           schedule={schedule}
-          txnDays={txnDays}
+          onDefinitionChanged={ async () => {
+            await refetchShifts();
+          }
+          }
         />
       )}
 
-      {/* Tab 2: Auto-Schedule */}
+      {/* Tab: Auto-Schedule */}
       {activeTab === "auto-schedule" && (
         <AutoScheduleTab
           scheduleId={scheduleId}

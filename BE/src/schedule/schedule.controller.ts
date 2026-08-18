@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Query,
   Param,
@@ -67,6 +68,12 @@ export class ScheduleController {
     @Body() dto: UpdateShiftDefinitionDto,
   ) {
     return this.scheduleService.updateShiftDefinition(id, dto);
+  }
+
+  @Delete(':id/shifts')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteShifts(@Param('id', ParseIntPipe) id: number) {
+    await this.scheduleService.deleteShifts(id);
   }
 
   // ---------------------------------------------------------------------------

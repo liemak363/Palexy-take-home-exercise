@@ -376,6 +376,11 @@ export class ScheduleService {
   // Confirm schedule
   // ---------------------------------------------------------------------------
 
+  async deleteShifts(id: number): Promise<void> {
+    await this.findById(id);
+    await this.scheduleRepository.deleteAllShifts(id);
+  }
+
   async confirmSchedule(id: number, dto: ConfirmScheduleDto): Promise<void> {
     const schedule = await this.findById(id);
     if (!schedule) {

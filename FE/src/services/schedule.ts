@@ -174,6 +174,10 @@ export const scheduleApi = {
     );
   },
 
+  deleteShifts: async (id: number): Promise<void> => {
+    await axiosInstance.delete(`/schedules/${id}/shifts`);
+  },
+
   confirmSchedule: async (
     id: number,
     body: ConfirmScheduleReq
