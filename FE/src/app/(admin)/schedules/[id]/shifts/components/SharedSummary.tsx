@@ -3,6 +3,7 @@
 import React from "react";
 import { HourlyTransaction } from "@/services/schedule";
 import { DayOfWeek } from "@/services/common"
+import { TRANSACTIONS_PER_STAFF_HOUR } from "@/const/txns-per-staff-hour";
 
 // ---------------------------------------------------------------------------
 // Constants & Helpers
@@ -63,7 +64,7 @@ export interface HourlyNotice {
 export function calculateHourlyNotices(
   txnDays: Record<DayOfWeek, HourlyTransaction[]>,
   shiftStaffCounts: SummaryShift[],
-  N: number = 15
+  N: number = TRANSACTIONS_PER_STAFF_HOUR
 ): HourlyNotice[] {
   const txnLookup: Record<string, Record<string, number>> = {};
   for (const day of ORDERED_DAYS) {
@@ -302,15 +303,15 @@ export function AggregatedSummary({ txnDays, shiftStaffCounts }: AggregatedSumma
                   const txns = txnLookup[day][h] ?? 0;
                   const staffHrs = staffLookup[day][h] ?? 0;
                   const ratio = staffHrs > 0 ? (txns / staffHrs).toFixed(1) : "–";
-                  const req = Math.ceil(txns / 15);
-                  const isUnderstaffed = txns > staffHrs * 15;
+                  const req = Math.ceil(txns / TRANSACTIONS_PER_STAFF_HOUR);
+                  const isUnderstaffed = txns > staffHrs * TRANSACTIONS_PER_STAFF_HOUR;
                   const isUnused = staffHrs > req;
 
                   let cellClass = "text-gray-700 dark:text-gray-300";
                   let titleAttr = "";
                   if (isUnderstaffed) {
                     cellClass = "bg-red-200 text-red-700 font-semibold dark:bg-red-900 dark:text-red-300";
-                    titleAttr = `Under-staffed: ${txns} txns > ${staffHrs * 15} capacity (${staffHrs} staff)`;
+                    titleAttr = `Under-staffed: ${txns} txns > ${staffHrs * TRANSACTIONS_PER_STAFF_HOUR} capacity (${staffHrs} staff)`;
                   } else if (isUnused) {
                     cellClass = "bg-amber-100 text-amber-700 font-medium dark:bg-amber-900/40 dark:text-amber-300";
                     titleAttr = `Unused capacity: ${staffHrs} staff assigned > ${req} required (${txns} txns)`;

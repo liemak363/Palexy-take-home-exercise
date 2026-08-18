@@ -1,0 +1,1 @@
+export const TRANSACTIONS_PER_STAFF_HOUR = 15

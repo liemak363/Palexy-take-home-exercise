@@ -68,3 +68,7 @@ ALTER TABLE "shift_assignment" ADD CONSTRAINT "shift_assignment_shift_id_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "shift_assignment" ADD CONSTRAINT "shift_assignment_staff_id_fkey" FOREIGN KEY ("staff_id") REFERENCES "staff"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+
+-- init value for "config" table
+INSERT INTO "config" ("key", "value") VALUES ('TRANSACTIONS_PER_STAFF_HOUR', '15');
