@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../provider/prisma/prisma.service';
 import { ScheduleQueryDto } from './dto/schedule-query.dto';
 import { UploadedTransactions } from './types/uploaded-transactions.type';
+import { ShiftDefinition } from './types/shift-definition.type';
 
 @Injectable()
 export class ScheduleRepository {
@@ -27,9 +28,9 @@ export class ScheduleRepository {
     return this.prisma.schedule.findUnique({ where: { id } });
   }
 
-  async create(startDate: Date) {
+  async create(startDate: Date, shiftDefinition: ShiftDefinition) {
     return this.prisma.schedule.create({
-      data: { startDate },
+      data: { startDate, shiftDefinition: shiftDefinition as object },
     });
   }
 
@@ -37,6 +38,25 @@ export class ScheduleRepository {
     return this.prisma.schedule.update({
       where: { id },
       data: { uploadedTxns: txns as object },
+    });
+  }
+
+  async findShiftsById(id: number) {
+    return this.prisma.schedule.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        startDate: true,
+        shiftDefinition: true,
+        shifts: true,
+      },
+    });
+  }
+
+  async updateShiftDefinition(id: number, definition: ShiftDefinition) {
+    return this.prisma.schedule.update({
+      where: { id },
+      data: { shiftDefinition: definition as object },
     });
   }
 }

@@ -11,6 +11,8 @@ import {
   HourlyTransaction,
   UploadedTransactions,
 } from './types/uploaded-transactions.type';
+import { UpdateShiftDefinitionDto } from './dto/update-shift-definition.dto';
+import { ShiftDefinition } from './types/shift-definition.type';
 
 // ---------------------------------------------------------------------------
 // CSV helpers (pure functions — no external dependency)
@@ -187,6 +189,61 @@ function parseAndNormalizeCsv(buffer: Buffer): UploadedTransactions {
 }
 
 // ---------------------------------------------------------------------------
+// Shift definition validation helpers
+// ---------------------------------------------------------------------------
+
+const DAY_START = '07:00';
+const DAY_END = '23:00';
+
+/**
+ * Validate that the provided shift slots:
+ *  - Have no slot where start >= end
+ *  - Together cover exactly 07:00–23:00 with no gaps or overlaps
+ *
+ * Returns the sorted, validated definition (sorted by start time).
+ */
+function validateAndSortShiftDefinition(
+  dto: UpdateShiftDefinitionDto,
+): ShiftDefinition {
+  const sorted = [...dto.shifts].sort((a, b) => a.start.localeCompare(b.start));
+
+  // Validate individual slots
+  for (const slot of sorted) {
+    if (slot.start >= slot.end) {
+      throw new BadRequestException(
+        `Shift start must be before end: ${slot.start}–${slot.end}.`,
+      );
+    }
+  }
+
+  // Check first and last boundaries
+  if (sorted[0].start !== DAY_START) {
+    throw new BadRequestException(`Shifts must start at ${DAY_START}.`);
+  }
+  if (sorted[sorted.length - 1].end !== DAY_END) {
+    throw new BadRequestException(`Shifts must end at ${DAY_END}.`);
+  }
+
+  // Check for gaps and overlaps between consecutive slots
+  for (let i = 1; i < sorted.length; i++) {
+    const prevEnd = sorted[i - 1].end;
+    const curStart = sorted[i].start;
+    if (prevEnd < curStart) {
+      throw new BadRequestException(
+        `Gap between shifts: ${prevEnd}–${curStart}.`,
+      );
+    }
+    if (prevEnd > curStart) {
+      throw new BadRequestException(
+        `Overlapping shifts: ${prevEnd} > ${curStart}.`,
+      );
+    }
+  }
+
+  return sorted;
+}
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -222,7 +279,17 @@ export class ScheduleService {
     const monday = new Date(inputDate);
     monday.setUTCDate(inputDate.getUTCDate() - daysToSubtract);
 
-    return this.scheduleRepository.create(monday);
+    // default shifts are 07:00-15:00 and 15:00-23:00
+    const defaultShiftDefinition: ShiftDefinition = [
+      { start: '07:00', end: '15:00' },
+      { start: '15:00', end: '23:00' },
+    ];
+
+    return this.scheduleRepository.create(monday, defaultShiftDefinition);
+  }
+
+  async findShiftsById(id: number) {
+    return this.scheduleRepository.findShiftsById(id);
   }
 
   async uploadTxns(
@@ -235,5 +302,16 @@ export class ScheduleService {
     const txns = parseAndNormalizeCsv(fileBuffer);
     await this.scheduleRepository.updateUploadedTxns(id, txns);
     return txns;
+  }
+
+  async updateShiftDefinition(
+    id: number,
+    dto: UpdateShiftDefinitionDto,
+  ): Promise<ShiftDefinition> {
+    await this.findById(id);
+
+    const definition = validateAndSortShiftDefinition(dto);
+    await this.scheduleRepository.updateShiftDefinition(id, definition);
+    return definition;
   }
 }

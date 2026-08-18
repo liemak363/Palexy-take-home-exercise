@@ -1,6 +1,7 @@
 import axiosInstance from "@/libs/axios";
 import { AxiosResponse } from "axios";
 import { ApiResponse } from "./common";
+import { Shift } from "./shift";
 
 // ---------------------------------------------------------------------------
 // Canonical transaction types (mirrors the backend shape)
@@ -26,6 +27,19 @@ export interface UploadedTransactions {
 }
 
 // ---------------------------------------------------------------------------
+// Shift definition types (mirrors the backend shape)
+// ---------------------------------------------------------------------------
+
+export interface ShiftSlot {
+  /** HH:00, e.g. "07:00" */
+  start: string;
+  /** HH:00, e.g. "15:00" */
+  end: string;
+}
+
+export type ShiftDefinition = ShiftSlot[];
+
+// ---------------------------------------------------------------------------
 // Schedule interfaces
 // ---------------------------------------------------------------------------
 
@@ -35,6 +49,14 @@ export interface Schedule {
   updatedAt: string;
   startDate: string;
   uploadedTxns: UploadedTransactions | null;
+  shiftDefinition: ShiftDefinition | null;
+}
+
+export interface ScheduleShifts {
+  id: number;
+  startDate: string;
+  shiftDefinition: ShiftDefinition | null;
+  shifts: Shift[];
 }
 
 export interface ScheduleOverview {
@@ -91,6 +113,22 @@ export const scheduleApi = {
       `/schedules/${id}/upload-txns`,
       formData,
       { headers: { "Content-Type": "multipart/form-data" } }
+    );
+  },
+
+  getScheduleShifts: async (
+    id: number
+  ): Promise<AxiosResponse<ApiResponse<ScheduleShifts>>> => {
+    return axiosInstance.get<ApiResponse<ScheduleShifts>>(`/schedules/${id}/shifts`);
+  },
+
+  updateShiftDefinition: async (
+    id: number,
+    shifts: ShiftSlot[]
+  ): Promise<AxiosResponse<ApiResponse<ShiftDefinition>>> => {
+    return axiosInstance.put<ApiResponse<ShiftDefinition>>(
+      `/schedules/${id}/shift-definition`,
+      { shifts }
     );
   },
 };

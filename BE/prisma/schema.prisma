@@ -33,9 +33,10 @@ model Staff {
 }
 
 model Schedule {
-  id           Int      @id @default(autoincrement())
-  startDate    DateTime @map("start_date") @db.Timestamptz
-  uploadedTxns Json?    @map("uploaded_txns")
+  id              Int      @id @default(autoincrement())
+  startDate       DateTime @map("start_date") @db.Timestamptz
+  uploadedTxns    Json?    @map("uploaded_txns")
+  shiftDefinition Json?    @map("shift_definition")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz

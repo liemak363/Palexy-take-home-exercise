@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Query,
   Param,
@@ -14,6 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ScheduleService } from './schedule.service';
 import { ScheduleQueryDto } from './dto/schedule-query.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { UpdateShiftDefinitionDto } from './dto/update-shift-definition.dto';
 
 @Controller('schedules')
 export class ScheduleController {
@@ -49,5 +51,18 @@ export class ScheduleController {
       throw new BadRequestException('File must be a CSV file.');
     }
     return this.scheduleService.uploadTxns(id, file.buffer);
+  }
+
+  @Get(':id/shifts')
+  async findShiftsById(@Param('id', ParseIntPipe) id: number) {
+    return this.scheduleService.findShiftsById(id);
+  }
+
+  @Put(':id/shift-definition')
+  async updateShiftDefinition(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateShiftDefinitionDto,
+  ) {
+    return this.scheduleService.updateShiftDefinition(id, dto);
   }
 }

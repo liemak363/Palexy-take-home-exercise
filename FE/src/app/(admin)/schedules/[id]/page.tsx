@@ -1,16 +1,15 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, { useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { useApi, useApiEffect } from "@/hooks/useApi";
+import { useApi } from "@/hooks/useApi";
 import {
   scheduleApi,
-  Schedule,
   DayOfWeek,
   UploadedTransactions,
 } from "@/services/schedule";
 import { formatDate, formatDateTime } from "@/utils/formatDate";
+import { useScheduleContext } from "./ScheduleContext";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -304,32 +303,8 @@ function UploadSection({ scheduleId, onUploaded }: UploadSectionProps) {
 // ---------------------------------------------------------------------------
 
 export default function ScheduleDetailPage() {
-  const params = useParams<{ id: string }>();
-  const router = useRouter();
-  const scheduleId = Number(params.id);
-
-  // ---- Fetch schedule ----
-  const fetchSchedule = useCallback(
-    (id: number) => scheduleApi.getById(id),
-    []
-  );
-
-  const {
-    data: schedule,
-    loading: fetchLoading,
-    error: fetchError,
-    refetch,
-  } = useApiEffect(
-    fetchSchedule,
-    null as unknown as Schedule,
-    [scheduleId] as [number],
-    (err) => {
-      toast.error(
-        (err as { message?: string })?.message ?? "Failed to load schedule."
-      );
-    },
-    [scheduleId]
-  );
+  // Schedule is fetched once in the layout via ScheduleProvider — no duplicate request.
+  const { schedule, loading: fetchLoading, error: fetchError, refetch } = useScheduleContext();
 
   // ---- Render states ----
   if (fetchLoading) {
@@ -349,12 +324,6 @@ export default function ScheduleDetailPage() {
         <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
           {fetchError ?? "Schedule not found."}
         </p>
-        <button
-          onClick={() => router.push("/schedules")}
-          className="mt-4 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-        >
-          ← Back to Schedules
-        </button>
       </div>
     );
   }
@@ -362,82 +331,55 @@ export default function ScheduleDetailPage() {
   const weekEnd = weekEndDate(schedule.startDate);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/schedules")}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+    <div className="divide-y divide-gray-100 dark:divide-gray-800">
+      {/* Info rows */}
+      <div>
+        {[
+          { label: "ID", value: String(schedule.id) },
+          { label: "Week Start (Mon)", value: formatDate(schedule.startDate, "UTC") },
+          { label: "Week End (Sun)", value: formatDate(weekEnd, "UTC") },
+          {
+            label: "Transaction Data",
+            value: schedule.uploadedTxns ? "Uploaded" : "Not uploaded",
+            badge: true,
+            hasData: !!schedule.uploadedTxns,
+          },
+          { label: "Created At", value: formatDateTime(schedule.createdAt) },
+          { label: "Updated At", value: formatDateTime(schedule.updatedAt) },
+        ].map((row) => (
+          <div
+            key={row.label}
+            className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 last:border-b-0"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Schedule #{schedule.id}
-            </h1>
-            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-              {formatDate(schedule.startDate, "UTC")} – {formatDate(weekEnd, "UTC")}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Info Card */}
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {[
-            { label: "ID", value: String(schedule.id) },
-            { label: "Week Start (Mon)", value: formatDate(schedule.startDate, "UTC") },
-            { label: "Week End (Sun)", value: formatDate(weekEnd, "UTC") },
-            {
-              label: "Transaction Data",
-              value: schedule.uploadedTxns ? "Uploaded" : "Not uploaded",
-              badge: true,
-              hasData: !!schedule.uploadedTxns,
-            },
-            { label: "Created At", value: formatDateTime(schedule.createdAt) },
-            { label: "Updated At", value: formatDateTime(schedule.updatedAt) },
-          ].map((row) => (
-            <div
-              key={row.label}
-              className="flex items-center justify-between px-6 py-4"
-            >
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                {row.label}
-              </span>
-              {row.badge ? (
-                row.hasData ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                    Uploaded
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
-                    Not uploaded
-                  </span>
-                )
-              ) : (
-                <span className="text-sm text-gray-800 dark:text-white/90">
-                  {row.value}
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              {row.label}
+            </span>
+            {row.badge ? (
+              row.hasData ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                  Uploaded
                 </span>
-              )}
-            </div>
-          ))}
-        </div>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                  Not uploaded
+                </span>
+              )
+            ) : (
+              <span className="text-sm text-gray-800 dark:text-white/90">
+                {row.value}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* Upload Card */}
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <UploadSection scheduleId={schedule.id} onUploaded={refetch} />
-      </div>
+      {/* Upload Section */}
+      <UploadSection scheduleId={schedule.id} onUploaded={refetch} />
 
-      {/* Transaction Data Card */}
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      {/* Transaction Data */}
+      <div>
         <div className="border-b border-gray-100 px-6 py-4 dark:border-gray-800">
           <h2 className="text-base font-semibold text-gray-800 dark:text-white/90">
             Transaction Data
